@@ -394,3 +394,32 @@ export const OkaneStateSchema = z
   })
   .strict();
 export type OkaneState = z.infer<typeof OkaneStateSchema>;
+
+export const PAPER_TRADE_LABEL =
+  "Paper trade for education only. No real order was placed and no real money moved.";
+
+// A simulated trade recorded only after a human presses Approve.
+export const PaperTradeSchema = z
+  .object({
+    id: z.string().min(1),
+    runId: z.string().min(1),
+    symbol: z.string().min(1),
+    direction: TradeDirectionSchema,
+    entry: z.number().positive(),
+    target: z.number().positive(),
+    stop: z.number().positive(),
+    positionSizeShares: z.number().int().positive(),
+    approvedAt: isoTimestamp,
+    dataMode: DataModeSchema,
+    source: z.string().min(1),
+    label: z.literal(PAPER_TRADE_LABEL),
+  })
+  .strict();
+export type PaperTrade = z.infer<typeof PaperTradeSchema>;
+
+// Body of the human decision endpoint. Nothing else is accepted from the browser.
+export const HumanDecisionSchema = z.enum(["APPROVE", "REJECT"]);
+export type HumanDecision = z.infer<typeof HumanDecisionSchema>;
+
+export const DecisionRequestSchema = z.object({ decision: HumanDecisionSchema }).strict();
+export type DecisionRequest = z.infer<typeof DecisionRequestSchema>;

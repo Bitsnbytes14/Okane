@@ -1,5 +1,6 @@
 import { ResearchRequestSchema, type FinalResponse, type StructuredError } from "@/lib/contracts";
 import { runOkaneGraph, type OkaneGraphResult } from "@/lib/graph/okane-graph";
+import { saveRunResult } from "@/lib/trace/run-result-store";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export async function handleResearchRequest(
 
   const result = await runner(parsed.data);
   if (!result.ok) return graphError(result.error);
+  // Kept so a later human decision is judged from this stored result.
+  saveRunResult(result.response);
   return Response.json(result.response satisfies FinalResponse, {
     status: 200,
     headers: { "Cache-Control": "no-store" },
