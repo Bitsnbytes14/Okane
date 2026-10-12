@@ -2,13 +2,23 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import {
+  ApprovalStatusSchema,
   FinalResponseSchema,
+  PaperTradeSchema,
   ResearchRequestSchema,
   StructuredErrorSchema,
   type FinalResponse,
+  type HumanDecision,
+  type PaperTrade,
   type ResearchRequest,
   type StructuredError,
 } from "@/lib/contracts";
+import {
+  PaperTradeList,
+  PaperTradeReceipt,
+  PaperTradingBanner,
+  decisionOutcomeText,
+} from "@/components/paper-trading-banner";
 
 type FormFields = {
   symbol: string;
@@ -55,7 +65,57 @@ function StatusBadge({ status }: { status: FinalResponse["status"] }) {
   return <span className={`status status-${status.toLowerCase()}`}>{label}</span>;
 }
 
-function ResultCard({ response }: { response: FinalResponse }) {
+function DecisionPanel({
+  response,
+  trade,
+  onDecide,
+}: {
+  response: FinalResponse;
+  trade: PaperTrade | null;
+  onDecide: (decision: HumanDecision) => Promise<StructuredError | null>;
+}) {
+  const [isSending, setIsSending] = useState(false);
+  const [decisionError, setDecisionError] = useState<StructuredError | null>(null);
+  const canDecide =
+    response.status === "AWAITING_HUMAN_APPROVAL" && response.approvalStatus === "PENDING_HUMAN";
+
+  async function decide(decision: HumanDecision) {
+    setIsSending(true);
+    setDecisionError(await onDecide(decision));
+    setIsSending(false);
+  }
+
+  return (
+    <div className="decision-panel">
+      <p className="metric-label">Human decision</p>
+      <p>{decisionOutcomeText(response.status, response.approvalStatus)}</p>
+      {canDecide ? (
+        <div className="decision-actions">
+          <button type="button" disabled={isSending} onClick={() => void decide("APPROVE")}>
+            Approve paper trade
+          </button>
+          <button type="button" disabled={isSending} onClick={() => void decide("REJECT")}>
+            Reject
+          </button>
+        </div>
+      ) : null}
+      {decisionError === null ? null : (
+        <p className="decision-error" role="alert">{decisionError.message}</p>
+      )}
+      {trade === null ? null : <PaperTradeReceipt trade={trade} />}
+    </div>
+  );
+}
+
+function ResultCard({
+  response,
+  trade,
+  onDecide,
+}: {
+  response: FinalResponse;
+  trade: PaperTrade | null;
+  onDecide: (decision: HumanDecision) => Promise<StructuredError | null>;
+}) {
   const proposal = response.tradeProposal;
   const traceHref = `/api/trace/${encodeURIComponent(response.requestId)}`;
 
@@ -68,6 +128,8 @@ function ResultCard({ response }: { response: FinalResponse }) {
         </div>
         <StatusBadge status={response.status} />
       </div>
+
+      <PaperTradingBanner />
 
       {response.dataMode === "fixture" ? <p className="demo-label">{response.demoLabel}</p> : null}
 
@@ -113,12 +175,16 @@ function ResultCard({ response }: { response: FinalResponse }) {
         </div>
       </div>
 
+      <DecisionPanel response={response} trade={trade} onDecide={onDecide} />
+
       <p className="disclaimer">{response.disclaimer}</p>
     </section>
   );
 }
 
-export function ResearchWorkspace() {
+export function ResearchWorkspace({ initialTrades = [] }: { initialTrades?: readonly PaperTrade[] }) {
+  const [trades, setTrades] = useState<readonly PaperTrade[]>(initialTrades);
+  const [resultTrade, setResultTrade] = useState<PaperTrade | null>(null);
   const [fields, setFields] = useState<FormFields>(INITIAL_FIELDS);
   const [result, setResult] = useState<FinalResponse | null>(null);
   const [error, setError] = useState<StructuredError | null>(null);
@@ -132,6 +198,7 @@ export function ResearchWorkspace() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setResult(null);
+    setResultTrade(null);
     setError(null);
     if ("code" in requestPreview) {
       setError(requestPreview);
@@ -165,6 +232,50 @@ export function ResearchWorkspace() {
       setError({ code: "NETWORK_ERROR", message: "Unable to reach the research service. Please try again." });
     } finally {
       setIsRunning(false);
+    }
+  }
+
+  // The server judges the decision from its stored run. The browser only shows the outcome.
+  async function decide(decision: HumanDecision): Promise<StructuredError | null> {
+    if (result === null) return null;
+    try {
+      const response = await fetch(`/api/runs/${encodeURIComponent(result.requestId)}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      const body: unknown = await response.json();
+      if (response.ok) {
+        const approvalStatus = ApprovalStatusSchema.safeParse(
+          typeof body === "object" && body !== null && "approvalStatus" in body
+            ? (body as { approvalStatus: unknown }).approvalStatus
+            : undefined,
+        );
+        const trade = PaperTradeSchema.nullable().safeParse(
+          typeof body === "object" && body !== null && "trade" in body
+            ? (body as { trade: unknown }).trade
+            : undefined,
+        );
+        if (approvalStatus.success && trade.success) {
+          setResult({ ...result, approvalStatus: approvalStatus.data });
+          const recorded = trade.data;
+          if (recorded !== null) {
+            setResultTrade(recorded);
+            setTrades((current) => [...current, recorded]);
+          }
+          return null;
+        }
+      }
+      const parsedError = StructuredErrorSchema.safeParse(
+        typeof body === "object" && body !== null && "error" in body
+          ? (body as { error: unknown }).error
+          : undefined,
+      );
+      return parsedError.success
+        ? parsedError.data
+        : { code: "UNKNOWN", message: "The service returned an unexpected response." };
+    } catch {
+      return { code: "NETWORK_ERROR", message: "Unable to record the decision. Please try again." };
     }
   }
 
@@ -218,7 +329,8 @@ export function ResearchWorkspace() {
       </section>
 
       {error === null ? null : <ErrorNotice error={error} />}
-      {result === null ? null : <ResultCard response={result} />}
+      {result === null ? null : <ResultCard response={result} trade={resultTrade} onDecide={decide} />}
+      <PaperTradeList trades={trades} />
     </main>
   );
 }

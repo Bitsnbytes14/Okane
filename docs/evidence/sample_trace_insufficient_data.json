@@ -1,13 +1,13 @@
 [
   {
-    "runId": "run_2026-10-08_08b3d0bc",
-    "at": "2026-10-08T17:51:51.852Z",
+    "runId": "run_2026-10-12_99a9642d",
+    "at": "2026-10-12T18:13:23.095Z",
     "agent": "research",
     "event": "completed",
     "inputSummary": "RELIANCE.NS, 5 days, paper mode",
     "outputSummary": "INSUFFICIENT_EVIDENCE, 0 evidence items, quality INSUFFICIENT, model none",
     "routeReason": "Research reported missing, stale or unusable evidence: Market data quality is insufficient, so no evidence was written and no model was called",
-    "elapsedMs": 0,
+    "elapsedMs": 1,
     "dataMode": "fixture",
     "error": null
   }

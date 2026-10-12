@@ -380,3 +380,31 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+.paper-banner {
+  margin: 18px 0 0;
+  border: 1px solid #6a5411;
+  border-radius: 6px;
+  background: #f6f0d8;
+  padding: 10px 14px;
+  color: #6a5411;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.decision-panel,
+.paper-receipt,
+.paper-ledger {
+  margin-top: 22px;
+}
+
+.decision-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.decision-error {
+  margin-top: 10px;
+  color: #8d3320;
+}

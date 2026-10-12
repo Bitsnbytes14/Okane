@@ -122,3 +122,8 @@ export function redactSecrets(text: string, env: NodeJS.ProcessEnv = process.env
   }
   return out;
 }
+
+export const LEDGER_DEFAULTS = {
+  // The in memory ledger keeps this many most recent paper trades.
+  maxTrades: 50,
+} as const;
