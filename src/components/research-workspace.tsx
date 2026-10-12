@@ -3,10 +3,12 @@
 import { FormEvent, useMemo, useState } from "react";
 import {
   ApprovalStatusSchema,
+  DemoScenarioSchema,
   FinalResponseSchema,
   PaperTradeSchema,
   ResearchRequestSchema,
   StructuredErrorSchema,
+  type DemoScenario,
   type FinalResponse,
   type HumanDecision,
   type PaperTrade,
@@ -19,6 +21,12 @@ import {
   PaperTradingBanner,
   decisionOutcomeText,
 } from "@/components/paper-trading-banner";
+import { TracePanel } from "@/components/trace-panel";
+import {
+  DEMO_SCENARIO_NOTICE,
+  DEMO_SCENARIO_OPTIONS,
+  dataModeBadgeText,
+} from "@/components/trace-view-model";
 
 type FormFields = {
   symbol: string;
@@ -131,6 +139,8 @@ function ResultCard({
 
       <PaperTradingBanner />
 
+      <p className={`data-badge data-badge-${response.dataMode}`}>{dataModeBadgeText(response.dataMode)}</p>
+
       {response.dataMode === "fixture" ? <p className="demo-label">{response.demoLabel}</p> : null}
 
       {proposal === undefined ? (
@@ -175,6 +185,13 @@ function ResultCard({
         </div>
       </div>
 
+      <TracePanel
+        runId={response.requestId}
+        events={response.trace}
+        status={response.status}
+        dataMode={response.dataMode}
+      />
+
       <DecisionPanel response={response} trade={trade} onDecide={onDecide} />
 
       <p className="disclaimer">{response.disclaimer}</p>
@@ -182,7 +199,14 @@ function ResultCard({
   );
 }
 
-export function ResearchWorkspace({ initialTrades = [] }: { initialTrades?: readonly PaperTrade[] }) {
+export function ResearchWorkspace({
+  initialTrades = [],
+  demoMode = false,
+}: {
+  initialTrades?: readonly PaperTrade[];
+  demoMode?: boolean;
+}) {
+  const [scenario, setScenario] = useState<DemoScenario>("normal");
   const [trades, setTrades] = useState<readonly PaperTrade[]>(initialTrades);
   const [resultTrade, setResultTrade] = useState<PaperTrade | null>(null);
   const [fields, setFields] = useState<FormFields>(INITIAL_FIELDS);
@@ -210,7 +234,8 @@ export function ResearchWorkspace({ initialTrades = [] }: { initialTrades?: read
       const response = await fetch("/api/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPreview),
+        // Only the scenario name is sent, and only while demo mode is on.
+        body: JSON.stringify(demoMode ? { ...requestPreview, scenario } : requestPreview),
       });
       const body: unknown = await response.json();
       const parsedResult = FinalResponseSchema.safeParse(body);
@@ -287,6 +312,26 @@ export function ResearchWorkspace({ initialTrades = [] }: { initialTrades?: read
         <p className="lede">A multi-agent research workspace for human-approved paper trading of Indian equities.</p>
       </section>
 
+      {demoMode ? (
+        <div className="scenario-picker">
+          <label>
+            Demo scenario
+            <select
+              value={scenario}
+              onChange={(event) => {
+                const parsed = DemoScenarioSchema.safeParse(event.target.value);
+                if (parsed.success) setScenario(parsed.data);
+              }}
+            >
+              {DEMO_SCENARIO_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </label>
+          <p className="scenario-notice">{DEMO_SCENARIO_NOTICE}</p>
+        </div>
+      ) : null}
+
       <section className="research-layout" aria-label="Paper-trading research workspace">
         <form className="research-form" onSubmit={submit} noValidate>
           <div className="form-heading">
@@ -314,7 +359,7 @@ export function ResearchWorkspace({ initialTrades = [] }: { initialTrades?: read
           <button type="submit" disabled={isRunning}>
             {isRunning ? "Agents are researching…" : "Run paper-trading research"}
           </button>
-          <p className="form-note">Runs remain in paper mode. A later human approval step is required before any simulated trade is recorded.</p>
+          <p className="form-note">Runs remain in paper mode. A human must approve before any paper trade is recorded.</p>
         </form>
 
         <aside className="agent-overview" aria-label="Agent workflow">
