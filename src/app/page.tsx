@@ -1,3 +1,4 @@
+import { isDemoMode } from "@/lib/config";
 import { ResearchWorkspace } from "@/components/research-workspace";
 import { listPaperTrades } from "@/lib/ledger/ledger";
 
@@ -5,5 +6,5 @@ import { listPaperTrades } from "@/lib/ledger/ledger";
 export const dynamic = "force-dynamic";
 
 export default function Home() {
-  return <ResearchWorkspace initialTrades={listPaperTrades()} />;
+  return <ResearchWorkspace initialTrades={listPaperTrades()} demoMode={isDemoMode()} />;
 }

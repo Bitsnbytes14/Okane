@@ -127,3 +127,9 @@ export const LEDGER_DEFAULTS = {
   // The in memory ledger keeps this many most recent paper trades.
   maxTrades: 50,
 } as const;
+
+// True only when the existing demo flag is on. Never throws.
+export function isDemoMode(env: NodeJS.ProcessEnv = process.env): boolean {
+  const result = loadServerConfig(env);
+  return result.ok && result.config.demoMode;
+}

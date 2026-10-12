@@ -423,3 +423,7 @@ export type HumanDecision = z.infer<typeof HumanDecisionSchema>;
 
 export const DecisionRequestSchema = z.object({ decision: HumanDecisionSchema }).strict();
 export type DecisionRequest = z.infer<typeof DecisionRequestSchema>;
+
+// Demo scenario names the browser may send. Only the name travels, never data.
+export const DemoScenarioSchema = z.enum(["normal", "risk_revision", "insufficient_data"]);
+export type DemoScenario = z.infer<typeof DemoScenarioSchema>;
