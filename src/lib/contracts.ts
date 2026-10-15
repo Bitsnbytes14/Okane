@@ -295,7 +295,7 @@ export const ResearchStatusSchema = z.enum(["EVIDENCE_READY", "INSUFFICIENT_EVID
 export type ResearchStatus = z.infer<typeof ResearchStatusSchema>;
 
 // Where the brief text came from. "none" means no model call was made.
-export const ResearchModelSourceSchema = z.enum(["claude", "mock", "none"]);
+export const ResearchModelSourceSchema = z.enum(["openai", "mock", "none"]);
 export type ResearchModelSource = z.infer<typeof ResearchModelSourceSchema>;
 
 // The Research Agent output. The source fields are copied from the market

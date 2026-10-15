@@ -80,15 +80,15 @@ describe("runResearchAgent", () => {
   it("returns EVIDENCE_READY with sourced and dated evidence for a valid fixture", async () => {
     const spy = makeDeps(
       { ok: true, snapshot: normalSnapshot },
-      { ok: true, output: groundedOutput(normalSnapshot, 0.7), source: "claude" },
+      { ok: true, output: groundedOutput(normalSnapshot, 0.7), source: "openai" },
     );
     const result = await runResearchAgent(request, spy.deps);
     assert.equal(result.ok, true);
     if (!result.ok) return;
     const { brief } = result;
     assert.equal(brief.status, "EVIDENCE_READY");
-    assert.equal(brief.modelSource, "claude");
-    assert.equal(result.modelSource, "claude");
+    assert.equal(brief.modelSource, "openai");
+    assert.equal(result.modelSource, "openai");
     assert.equal(brief.source, normalSnapshot.source);
     assert.equal(brief.retrievedAt, normalSnapshot.retrievedAt);
     assert.equal(brief.dataMode, "fixture");
@@ -139,7 +139,7 @@ describe("runResearchAgent", () => {
       {
         ok: false,
         error: { code: "INVALID_OUTPUT", message: "Model output was not valid JSON" },
-        source: "claude",
+        source: "openai",
       },
     );
     const first = await runResearchAgent(request, failed.deps);
@@ -157,7 +157,7 @@ describe("runResearchAgent", () => {
           evidence: [{ summary: "Price reached 9999.99 today.", quality: "HIGH" }],
           confidence: 0.9,
         },
-        source: "claude",
+        source: "openai",
       },
     );
     const second = await runResearchAgent(request, invented.deps);
@@ -171,7 +171,7 @@ describe("runResearchAgent", () => {
     const degraded = { ...normalSnapshot, dataQuality: "DEGRADED" as const };
     const spy = makeDeps(
       { ok: true, snapshot: degraded },
-      { ok: true, output: groundedOutput(degraded, 0.95), source: "claude" },
+      { ok: true, output: groundedOutput(degraded, 0.95), source: "openai" },
     );
     const result = await runResearchAgent(request, spy.deps);
     assert.equal(result.ok, true);

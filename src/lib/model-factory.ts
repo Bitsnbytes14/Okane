@@ -1,14 +1,14 @@
 import "server-only";
 
-import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatOpenAI } from "@langchain/openai";
 import { loadServerConfig, MODEL_DEFAULTS } from "@/lib/config";
 import type { StructuredError } from "@/lib/contracts";
 
-// The only place that builds the Claude client. The SDK reads
-// ANTHROPIC_API_KEY from the server environment itself, so the key is never
+// The only place that builds the OpenAI client. The SDK reads
+// OPENAI_API_KEY from the server environment itself, so the key is never
 // passed through application code.
 
-export type ModelSource = "claude" | "mock";
+export type ModelSource = "openai" | "mock";
 
 export const MOCK_MODEL_LABEL = "MOCK_MODEL_DEMO_ONLY";
 
@@ -50,16 +50,16 @@ function textFromContent(content: unknown): string {
   return "";
 }
 
-function createClaudeModel(): ModelClient {
-  const chat = new ChatAnthropic({
-    model: MODEL_DEFAULTS.modelName,
+function createOpenAIModel(modelName: string): ModelClient {
+  const chat = new ChatOpenAI({
+    model: modelName,
     temperature: MODEL_DEFAULTS.temperature,
     maxTokens: MODEL_DEFAULTS.maxTokens,
     maxRetries: 0,
-    clientOptions: { timeout: MODEL_DEFAULTS.timeoutMs },
+    timeout: MODEL_DEFAULTS.timeoutMs,
   });
   return {
-    source: "claude",
+    source: "openai",
     invoke: async (prompt, signal) => {
       const message = await chat.invoke(prompt, { signal });
       return textFromContent(message.content);
@@ -81,9 +81,9 @@ export function createModel(mockResponse?: unknown): ModelClientResult {
       ok: false,
       error: {
         code: "MISSING_API_KEY",
-        message: "ANTHROPIC_API_KEY is not set and demo mode is off",
+        message: "OPENAI_API_KEY is not set and demo mode is off",
       },
     };
   }
-  return { ok: true, client: createClaudeModel() };
+  return { ok: true, client: createOpenAIModel(loaded.config.modelName) };
 }

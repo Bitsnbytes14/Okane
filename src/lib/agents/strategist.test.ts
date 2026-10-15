@@ -106,7 +106,7 @@ describe("runStrategistAgent", () => {
   });
 
   it("builds a schema-valid, cited paper-trade proposal from evidence-ready research", async () => {
-    const spy = makeDeps({ ok: true, output: buyOutput(), source: "claude" });
+    const spy = makeDeps({ ok: true, output: buyOutput(), source: "openai" });
     const result = await runStrategistAgent(request, readyBrief, spy.deps);
     assert.equal(result.ok, true);
     if (!result.ok || result.kind !== "PROPOSAL") return;
@@ -117,12 +117,12 @@ describe("runStrategistAgent", () => {
     assert.equal(result.proposal.horizonDays, 5);
     assert.deepEqual(result.proposal.evidenceIds, ["ev_001", "ev_002"]);
     assert.match(result.proposal.rationale, /\[ev_001\]/);
-    assert.equal(result.modelSource, "claude");
+    assert.equal(result.modelSource, "openai");
     assert.equal(spy.modelCalls(), 1);
   });
 
   it("does not call the model or create a proposal without sufficient research", async () => {
-    const spy = makeDeps({ ok: true, output: buyOutput(), source: "claude" });
+    const spy = makeDeps({ ok: true, output: buyOutput(), source: "openai" });
     const result = await runStrategistAgent(request, noEvidenceBrief(), spy.deps);
     assert.equal(result.ok, true);
     if (!result.ok) return;
@@ -145,7 +145,7 @@ describe("runStrategistAgent", () => {
         evidenceIds: ["ev_001"],
         reason: "No clear risk-adjusted setup is available",
       },
-      source: "claude",
+      source: "openai",
     });
     const result = await runStrategistAgent(request, readyBrief, spy.deps);
     assert.equal(result.ok, true);
@@ -159,7 +159,7 @@ describe("runStrategistAgent", () => {
     const unknownEvidence = makeDeps({
       ok: true,
       output: buyOutput({ evidenceIds: ["ev_fake"], rationale: "Claim [ev_fake]." }),
-      source: "claude",
+      source: "openai",
     });
     const first = await runStrategistAgent(request, readyBrief, unknownEvidence.deps);
     assert.equal(first.ok, false);
@@ -168,7 +168,7 @@ describe("runStrategistAgent", () => {
     const missingCitation = makeDeps({
       ok: true,
       output: buyOutput({ rationale: "No citation here." }),
-      source: "claude",
+      source: "openai",
     });
     const second = await runStrategistAgent(request, readyBrief, missingCitation.deps);
     assert.equal(second.ok, false);
@@ -177,7 +177,7 @@ describe("runStrategistAgent", () => {
     const badStop = makeDeps({
       ok: true,
       output: buyOutput({ stop: 102 }),
-      source: "claude",
+      source: "openai",
     });
     const third = await runStrategistAgent(request, readyBrief, badStop.deps);
     assert.equal(third.ok, false);

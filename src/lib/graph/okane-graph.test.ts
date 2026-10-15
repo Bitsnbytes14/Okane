@@ -384,8 +384,8 @@ describe("runOkaneGraph", () => {
 
   it("11. the default agents work in demo mode with no network and no API key", async () => {
     const savedFetch = globalThis.fetch;
-    const savedKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
+    const savedKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
     globalThis.fetch = async () => {
       throw new TypeError("network disabled for this test");
     };
@@ -398,7 +398,7 @@ describe("runOkaneGraph", () => {
       assert.match(response.trace[0].outputSummary, /fallback to labelled fixture/);
     } finally {
       globalThis.fetch = savedFetch;
-      if (savedKey !== undefined) process.env.ANTHROPIC_API_KEY = savedKey;
+      if (savedKey !== undefined) process.env.OPENAI_API_KEY = savedKey;
       clearMarketDataCache();
     }
   });

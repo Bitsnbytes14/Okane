@@ -23,7 +23,7 @@ flowchart LR
     U[User] --> UI[Next.js browser UI]
     UI --> API[Next.js server route]
     API --> G[LangGraph.js Okane graph]
-    G --> M[Claude model via LangChain.js]
+    G --> M[OpenAI model via LangChain.js]
     G --> D[Market-data adapter]
     D --> P[Approved market-data provider]
     D --> F[Dated local fixture fallback]
@@ -177,7 +177,7 @@ For real-provider data, `dataMode` is `provider` and source/retrieval metadata m
 ## 10. Vercel deployment design
 
 - Deploy the Next.js application to Vercel.
-- Keep `ANTHROPIC_API_KEY` and provider keys in Vercel environment variables only.
+- Keep `OPENAI_API_KEY` and provider keys in Vercel environment variables only.
 - Server route handlers invoke models and providers; do not put keys in client components.
 - Use external durable storage (for example Vercel Postgres/Neon) only if time remains after the in-memory/demo-safe flow works; serverless file-system persistence is not a production store.
 - Ensure the app degrades to a labelled demo fixture or safe no-trade response if the external provider is unavailable during the demo.
